@@ -6,17 +6,15 @@ import { Route, Routes } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'
 
+const queryClient = new QueryClient();
+
 function App() {
-  const queryClient = new QueryClient();
-
-
-  
   return (
     <QueryClientProvider client={queryClient}>
         <Routes>
           <Route path='/' element={<ViewPosts />} />
           <Route path='/new-post' element={<CreatePost />} />
-          <Route path='/update-post/' element={<UpdatePostMutation post={post[0]} />} />
+          <Route path='/update-post/:id' element={<UpdatePostMutation />} />
         </Routes>
     </QueryClientProvider>
   )

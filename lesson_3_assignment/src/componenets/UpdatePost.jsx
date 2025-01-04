@@ -1,8 +1,8 @@
 // Task 3
 import { Col, Form, Button, Alert } from "react-bootstrap";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {useState} from 'react'
-import { useNavigate} from "react-router-dom";
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams} from "react-router-dom";
 
 const UpdatePost = async (post) => {
     const resopnse = await fetch(`https://jsonplaceholder.typicode.com/posts/${post.id}`, {
@@ -19,31 +19,43 @@ const UpdatePost = async (post) => {
 }
 
 const UpdatePostMutation = ({ post }) => {
-   const [title, setTitle] = useState(post.title);
-   const [body, setBody] = useState(post.body);
-   const queryClient = useQueryClient();
-   const navigate = useNavigate();
+    const { id } = useParams();
+    const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
-   const mutation = useMutation(UpdatePost, {
-    onSuccess: (updatedPost) => {
-        queryClient.invalidateQueries('posts');
-        queryClient.setQueryData('posts', (oldPosts) =>
-            oldPosts.map((item) =>
-                item.id === updatedPost.id ? updatedPost : item
-                )
+    const [title, setTitle] = useState('');
+    const [body, setBody] = useState('');
+    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+
+    useEffect(() => {
+        const cachedPosts = queryClient.getQueryData(["posts"]);
+        const post = cachedPosts?.find(p => p.id === parseInt(id, 10));
+        if (post) {
+            setTitle(post.title);
+            setBody(post.body);
+        }
+    }, [id, queryClient]);
+
+    const mutation = useMutation({
+        mutationFn: UpdatePost, 
+        onSuccess: (updatedPost) => {
+            queryClient.invalidateQueries(["posts"]);
+            queryClient.setQueryData(["posts"], (oldPosts) =>
+                oldPosts.map((post) => (post.id === updatedPost.id ? updatedPost : post))
             );
+            setShowSuccessAlert(true);
+            setTimeout(() => setShowSuccessAlert(false), 5000);
         },
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const updatedPost = { id: post.id, title, body };
-        mutation.mutate(updatedPost);
+        mutation.mutate({ id: parseInt(id, 10), title, body })
     };
 
     return (
         <div>
-             {isError && <Alert variant="danger">An error occurred: {error.message}</Alert>}
+             {mutation.isError && <Alert variant="danger">An error occurred: {mutation.error.message}</Alert>}
              {showSuccessAlert && <Alert variant="success">Post created successfully</Alert>}
              <h3>Edit Post {id}</h3>
              <Col md={{ span: 6, offset: 3 }}>
